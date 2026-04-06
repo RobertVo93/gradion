@@ -5,7 +5,6 @@ from app.core.config import settings
 from app.models.expense_item import ExpenseItem
 from app.models.user import User
 from app.repositories.expense_item_repository import ExpenseItemRepository
-from app.repositories.report_repository import ReportRepository
 from app.schemas.expense_item import ExpenseItemCreateRequest, ExpenseItemUpdateRequest
 from app.schemas.receipt import ReceiptUploadResponse
 from app.services.receipt_extraction_service import ReceiptExtractionService
@@ -16,7 +15,6 @@ from app.services.report_service import ReportService
 class ExpenseItemService:
     def __init__(self, db: Session):
         self.item_repo = ExpenseItemRepository(db)
-        self.report_repo = ReportRepository(db)
         self.report_service = ReportService(db)
         self.storage_service = ReceiptStorageService(settings)
         self.extraction_service = ReceiptExtractionService()
@@ -38,7 +36,6 @@ class ExpenseItemService:
             transaction_date=payload.transaction_date,
             receipt_url=payload.receipt_url,
         )
-        self._recalculate_report_total(report.id)
         return item
 
     def update_item(
@@ -66,9 +63,7 @@ class ExpenseItemService:
         if payload.receipt_url is not None:
             item.receipt_url = payload.receipt_url
 
-        item = self.item_repo.update(item)
-        self._recalculate_report_total(report.id)
-        return item
+        return self.item_repo.update(item)
 
     def delete_item(self, report_id: int, item_id: int, current_user: User) -> None:
         report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
@@ -76,7 +71,6 @@ class ExpenseItemService:
 
         item = self._get_report_item(report_id=report.id, item_id=item_id)
         self.item_repo.delete(item)
-        self._recalculate_report_total(report.id)
 
     async def upload_receipt(
         self,
@@ -99,13 +93,6 @@ class ExpenseItemService:
             extraction_status=extraction_status,
             extracted=extracted,
         )
-
-    def _recalculate_report_total(self, report_id: int) -> None:
-        report = self.report_repo.get_by_id(report_id)
-        if not report:
-            return
-        report.total_amount = self.item_repo.sum_amounts_by_report(report_id)
-        self.report_repo.update(report)
 
     def _get_report_item(self, report_id: int, item_id: int) -> ExpenseItem:
         item = self.item_repo.get_by_id(item_id)

@@ -115,7 +115,6 @@ def test_delete_item_recalculates_total(db_session: Session) -> None:
     item2 = _create_item(db_session, report.id, amount=Decimal("7.00"))
 
     service = ExpenseItemService(db_session)
-    service._recalculate_report_total(report.id)
     db_session.refresh(report)
     assert report.total_amount == Decimal("12.00")
 
