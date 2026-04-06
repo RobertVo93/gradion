@@ -1,0 +1,59 @@
+from fastapi import APIRouter, Depends, Response, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.user import User
+from app.schemas.expense_item import ExpenseItemCreateRequest, ExpenseItemResponse, ExpenseItemUpdateRequest
+from app.services.expense_item_service import ExpenseItemService
+
+router = APIRouter(prefix="/reports", tags=["expense-items"])
+
+
+@router.get("/{report_id}/items", response_model=list[ExpenseItemResponse])
+def list_items(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ExpenseItemResponse]:
+    items = ExpenseItemService(db).list_items(report_id=report_id, current_user=current_user)
+    return [ExpenseItemResponse.model_validate(item) for item in items]
+
+
+@router.post("/{report_id}/items", response_model=ExpenseItemResponse, status_code=status.HTTP_201_CREATED)
+def create_item(
+    report_id: int,
+    payload: ExpenseItemCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ExpenseItemResponse:
+    item = ExpenseItemService(db).create_item(report_id=report_id, payload=payload, current_user=current_user)
+    return ExpenseItemResponse.model_validate(item)
+
+
+@router.patch("/{report_id}/items/{item_id}", response_model=ExpenseItemResponse)
+def update_item(
+    report_id: int,
+    item_id: int,
+    payload: ExpenseItemUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ExpenseItemResponse:
+    item = ExpenseItemService(db).update_item(
+        report_id=report_id,
+        item_id=item_id,
+        payload=payload,
+        current_user=current_user,
+    )
+    return ExpenseItemResponse.model_validate(item)
+
+
+@router.delete("/{report_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_item(
+    report_id: int,
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    ExpenseItemService(db).delete_item(report_id=report_id, item_id=item_id, current_user=current_user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
