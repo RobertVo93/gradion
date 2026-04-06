@@ -50,3 +50,13 @@ export type ReceiptUploadResponse = {
     transaction_date: string | null;
   };
 };
+
+export type ReceiptPreviewResponse = {
+  extraction_status: "completed" | "failed";
+  extracted: {
+    merchant_name: string | null;
+    amount: string | number | null;
+    currency: string | null;
+    transaction_date: string | null;
+  };
+};

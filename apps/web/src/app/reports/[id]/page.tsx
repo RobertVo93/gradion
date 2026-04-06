@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/app-header";
 import { StatusBadge } from "@/components/status-badge";
 import { apiRequest } from "@/lib/api";
 import { getStoredUser, getToken } from "@/lib/auth";
-import { ExpenseItem, ReceiptUploadResponse, Report, User } from "@/lib/types";
+import { ExpenseItem, ReceiptPreviewResponse, ReceiptUploadResponse, Report, User } from "@/lib/types";
 
 type ExtractionState = "idle" | "uploading" | "extracting" | "completed" | "failed";
 
@@ -103,24 +103,11 @@ export default function ReportDetailPage() {
         formData.append("file", receiptFile);
 
         setExtractionState("extracting");
-        const extracted = await apiRequest<ReceiptUploadResponse>(`/reports/${reportId}/items/${created.id}/receipt`, {
+        await apiRequest<ReceiptUploadResponse>(`/reports/${reportId}/items/${created.id}/receipt`, {
           method: "POST",
           token,
           body: formData,
           headers: {},
-        });
-
-        const patchPayload = {
-          merchant_name: extracted.extracted.merchant_name || merchant || null,
-          amount: extracted.extracted.amount ?? Number(amount),
-          currency: extracted.extracted.currency || currency,
-          transaction_date: extracted.extracted.transaction_date || date,
-        };
-
-        await apiRequest<ExpenseItem>(`/reports/${reportId}/items/${created.id}`, {
-          method: "PATCH",
-          token,
-          body: JSON.stringify(patchPayload),
         });
         setExtractionState("completed");
       }
@@ -135,6 +122,34 @@ export default function ReportDetailPage() {
     } catch (err) {
       setExtractionState("failed");
       setError(err instanceof Error ? err.message : "Add item failed");
+    }
+  }
+
+  async function processReceipt() {
+    if (!token || !receiptFile || isLocked) return;
+    setError("");
+    try {
+      setExtractionState("uploading");
+      const formData = new FormData();
+      formData.append("file", receiptFile);
+
+      setExtractionState("extracting");
+      const extracted = await apiRequest<ReceiptPreviewResponse>("/receipts/extract-preview", {
+        method: "POST",
+        token,
+        body: formData,
+        headers: {},
+      });
+
+      if (extracted.extracted.amount !== null) setAmount(String(extracted.extracted.amount));
+      if (extracted.extracted.currency) setCurrency(extracted.extracted.currency);
+      if (extracted.extracted.merchant_name) setMerchant(extracted.extracted.merchant_name);
+      if (extracted.extracted.transaction_date) setDate(extracted.extracted.transaction_date);
+
+      setExtractionState("completed");
+    } catch (err) {
+      setExtractionState("failed");
+      setError(err instanceof Error ? err.message : "Receipt processing failed");
     }
   }
 
@@ -199,12 +214,29 @@ export default function ReportDetailPage() {
               <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} required />
               <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Merchant" value={merchant} onChange={(e) => setMerchant(e.target.value)} />
               <input className="rounded-xl border border-black/15 px-4 py-3 sm:col-span-2" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-              <input className="rounded-xl border border-black/15 px-4 py-3 sm:col-span-2" type="file" accept=".pdf,image/*" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
+              <input
+                className="rounded-xl border border-black/15 px-4 py-3 sm:col-span-2"
+                type="file"
+                accept=".pdf,image/*"
+                onChange={(e) => {
+                  setReceiptFile(e.target.files?.[0] || null);
+                  setExtractionState("idle");
+                }}
+              />
             </div>
 
             <div className="mt-3 rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2 text-xs font-semibold uppercase tracking-wide">AI extraction: {extractionState}</div>
+            <button
+              type="button"
+              onClick={processReceipt}
+              disabled={!receiptFile || isLocked}
+              className="mt-3 w-full rounded-xl border border-black/20 px-4 py-3 text-sm font-bold disabled:opacity-40"
+            >
+              Process receipt and auto-fill
+            </button>
 
             {isLocked && <p className="mt-2 text-sm text-rose-700">This report is locked and cannot be edited.</p>}
+            <p className="mt-2 text-xs text-black/60">Flow: Upload receipt -&gt; Process -&gt; verify autofill -&gt; Add item.</p>
             {error && <p className="mt-2 text-sm text-rose-700">{error}</p>}
 
             <button disabled={isLocked} className="mt-4 w-full rounded-xl bg-black px-4 py-3 font-bold text-white disabled:opacity-40">Add item</button>

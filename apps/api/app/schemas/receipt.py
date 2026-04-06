@@ -16,3 +16,8 @@ class ReceiptUploadResponse(BaseModel):
     receipt_url: str
     extraction_status: Literal["completed", "failed"]
     extracted: ReceiptExtractedFields
+
+
+class ReceiptPreviewResponse(BaseModel):
+    extraction_status: Literal["completed", "failed"]
+    extracted: ReceiptExtractedFields
