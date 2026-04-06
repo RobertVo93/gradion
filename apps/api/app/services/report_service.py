@@ -17,6 +17,9 @@ class ReportService:
     def list_reports(self, user_id: int, status_filter: ReportStatus | None = None) -> list[ExpenseReport]:
         return self.report_repo.list_by_user(user_id=user_id, status=status_filter)
 
+    def list_all_reports(self, status_filter: ReportStatus | None = None) -> list[ExpenseReport]:
+        return self.report_repo.list_all(status=status_filter)
+
     def get_owned_report(self, report_id: int, current_user: User) -> ExpenseReport:
         report = self.report_repo.get_by_id(report_id)
         if not report:
@@ -46,6 +49,22 @@ class ReportService:
         if report.status != ReportStatus.DRAFT:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only DRAFT reports can be deleted")
         self.report_repo.delete(report)
+
+    def approve_report(self, report_id: int) -> ExpenseReport:
+        report = self._get_report_or_404(report_id)
+        self._set_status(report, ReportStatus.APPROVED)
+        return self.report_repo.update(report)
+
+    def reject_report(self, report_id: int) -> ExpenseReport:
+        report = self._get_report_or_404(report_id)
+        self._set_status(report, ReportStatus.REJECTED)
+        return self.report_repo.update(report)
+
+    def _get_report_or_404(self, report_id: int) -> ExpenseReport:
+        report = self.report_repo.get_by_id(report_id)
+        if not report:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+        return report
 
     @staticmethod
     def _set_status(report: ExpenseReport, new_status: ReportStatus) -> None:

@@ -79,3 +79,33 @@ def test_user_cannot_access_other_users_report(db_session: Session) -> None:
         ReportService(db_session).get_owned_report(report.id, another_user)
 
     assert exc.value.status_code == 403
+
+
+def test_admin_can_approve_submitted_report(db_session: Session) -> None:
+    user = _create_user(db_session, "submitter@example.com")
+    report = _create_report(db_session, user.id, ReportStatus.SUBMITTED)
+
+    result = ReportService(db_session).approve_report(report.id)
+
+    assert result.status == ReportStatus.APPROVED
+
+
+def test_admin_reject_requires_submitted_state(db_session: Session) -> None:
+    user = _create_user(db_session, "submitter2@example.com")
+    report = _create_report(db_session, user.id, ReportStatus.DRAFT)
+
+    with pytest.raises(HTTPException) as exc:
+        ReportService(db_session).reject_report(report.id)
+
+    assert exc.value.status_code == 400
+
+
+def test_admin_can_list_reports_with_status_filter(db_session: Session) -> None:
+    user = _create_user(db_session, "submitter3@example.com")
+    _create_report(db_session, user.id, ReportStatus.DRAFT, title="Draft")
+    _create_report(db_session, user.id, ReportStatus.SUBMITTED, title="Submitted")
+
+    reports = ReportService(db_session).list_all_reports(status_filter=ReportStatus.SUBMITTED)
+
+    assert len(reports) == 1
+    assert reports[0].status == ReportStatus.SUBMITTED

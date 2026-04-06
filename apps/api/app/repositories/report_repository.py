@@ -25,6 +25,13 @@ class ReportRepository:
         statement = statement.order_by(ExpenseReport.created_at.desc())
         return list(self.db.execute(statement).scalars().all())
 
+    def list_all(self, status: ReportStatus | None = None) -> list[ExpenseReport]:
+        statement = select(ExpenseReport)
+        if status:
+            statement = statement.where(ExpenseReport.status == status)
+        statement = statement.order_by(ExpenseReport.created_at.desc())
+        return list(self.db.execute(statement).scalars().all())
+
     def update(self, report: ExpenseReport) -> ExpenseReport:
         self.db.add(report)
         self.db.commit()
