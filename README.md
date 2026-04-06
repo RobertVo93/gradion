@@ -14,7 +14,7 @@ Step 1 is completed:
 - Auth: JWT/RBAC (next step)
 - Testing: pytest
 
-## Run (Step 1)
+## Run
 ```bash
 docker compose up --build
 ```
@@ -23,6 +23,20 @@ Services:
 - API: http://localhost:8000/health
 - Web: http://localhost:3000
 - Postgres: localhost:5432
+
+## One-Command Setup (Recommended)
+```bash
+./setup.sh
+```
+
+This will:
+- start `db`, `api`, and `web`
+- wait for API health
+- seed default users
+
+Default accounts:
+- `admin@example.com` / `Admin123!`
+- `user@example.com` / `User123!`
 
 ## Notes
 - Business logic and state transitions will be implemented in service layer in Step 3.
