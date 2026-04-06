@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.venv/
+.env
+node_modules/
+.next/
+out/
+coverage/
+.DS_Store
+storage/uploads/*
+!storage/uploads/.gitkeep
