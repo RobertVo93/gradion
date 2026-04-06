@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import api_router
@@ -19,6 +20,13 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Gradion Expense API", version="0.2.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(api_router)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 
