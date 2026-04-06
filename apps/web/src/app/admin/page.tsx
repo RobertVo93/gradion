@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -78,6 +79,9 @@ export default function AdminPage() {
               </div>
 
               <div className="mt-3 flex gap-2">
+                <Link href={`/admin/reports/${report.id}`} className="rounded-lg border border-black/20 px-3 py-2 text-sm font-bold hover:bg-black hover:text-white">
+                  View Detail
+                </Link>
                 <button disabled={report.status !== "SUBMITTED"} onClick={() => action(report.id, "approve")} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Approve</button>
                 <button disabled={report.status !== "SUBMITTED"} onClick={() => action(report.id, "reject")} className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Reject</button>
               </div>

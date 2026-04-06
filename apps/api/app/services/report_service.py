@@ -20,6 +20,9 @@ class ReportService:
     def list_all_reports(self, status_filter: ReportStatus | None = None) -> list[ExpenseReport]:
         return self.report_repo.list_all(status=status_filter)
 
+    def get_report_or_404(self, report_id: int) -> ExpenseReport:
+        return self._get_report_or_404(report_id)
+
     def get_owned_report(self, report_id: int, current_user: User) -> ExpenseReport:
         report = self.report_repo.get_by_id(report_id)
         if not report:
