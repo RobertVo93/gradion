@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
+from app.api.deps import Permission, require_permission
 from app.db.session import get_db
 from app.models.expense_report import ReportStatus
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.repositories.expense_item_repository import ExpenseItemRepository
 from app.schemas.expense_item import ExpenseItemResponse
 from app.schemas.report import ReportResponse
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/admin/reports", tags=["admin-reports"])
 @router.get("", response_model=list[ReportResponse])
 def list_all_reports(
     status_filter: ReportStatus | None = Query(default=None, alias="status"),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_permission(Permission.REPORT_READ, "all")),
     db: Session = Depends(get_db),
 ) -> list[ReportResponse]:
     reports = ReportService(db).list_all_reports(status_filter=status_filter)
@@ -26,7 +26,7 @@ def list_all_reports(
 @router.get("/{report_id}", response_model=ReportResponse)
 def get_report_detail(
     report_id: int,
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_permission(Permission.REPORT_READ, "all")),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     report = ReportService(db).get_report_or_404(report_id)
@@ -36,7 +36,7 @@ def get_report_detail(
 @router.get("/{report_id}/items", response_model=list[ExpenseItemResponse])
 def list_report_items(
     report_id: int,
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_permission(Permission.REPORT_READ, "all")),
     db: Session = Depends(get_db),
 ) -> list[ExpenseItemResponse]:
     ReportService(db).get_report_or_404(report_id)
@@ -47,7 +47,7 @@ def list_report_items(
 @router.post("/{report_id}/approve", response_model=ReportResponse)
 def approve_report(
     report_id: int,
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_permission(Permission.REPORT_APPROVE, "all")),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     report = ReportService(db).approve_report(report_id)
@@ -57,7 +57,7 @@ def approve_report(
 @router.post("/{report_id}/reject", response_model=ReportResponse)
 def reject_report(
     report_id: int,
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_permission(Permission.REPORT_REJECT, "all")),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     report = ReportService(db).reject_report(report_id)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import Permission, require_permission
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.expense_item import ExpenseItemCreateRequest, ExpenseItemResponse, ExpenseItemUpdateRequest
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/reports", tags=["expense-items"])
 @router.get("/{report_id}/items", response_model=list[ExpenseItemResponse])
 def list_items(
     report_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.EXPENSE_ITEM_READ, "own")),
     db: Session = Depends(get_db),
 ) -> list[ExpenseItemResponse]:
     items = ExpenseItemService(db).list_items(report_id=report_id, current_user=current_user)
@@ -25,7 +25,7 @@ def list_items(
 def create_item(
     report_id: int,
     payload: ExpenseItemCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.EXPENSE_ITEM_CREATE, "own")),
     db: Session = Depends(get_db),
 ) -> ExpenseItemResponse:
     item = ExpenseItemService(db).create_item(report_id=report_id, payload=payload, current_user=current_user)
@@ -37,7 +37,7 @@ def update_item(
     report_id: int,
     item_id: int,
     payload: ExpenseItemUpdateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.EXPENSE_ITEM_UPDATE, "own")),
     db: Session = Depends(get_db),
 ) -> ExpenseItemResponse:
     item = ExpenseItemService(db).update_item(
@@ -53,7 +53,7 @@ def update_item(
 def delete_item(
     report_id: int,
     item_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.EXPENSE_ITEM_DELETE, "own")),
     db: Session = Depends(get_db),
 ) -> Response:
     ExpenseItemService(db).delete_item(report_id=report_id, item_id=item_id, current_user=current_user)
@@ -65,7 +65,7 @@ async def upload_receipt(
     report_id: int,
     item_id: int,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.EXPENSE_ITEM_UPDATE, "own")),
     db: Session = Depends(get_db),
 ) -> ReceiptUploadResponse:
     return await ExpenseItemService(db).upload_receipt(
