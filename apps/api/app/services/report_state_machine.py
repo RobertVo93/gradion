@@ -5,11 +5,11 @@ class ReportStateMachine:
     _TRANSITIONS: dict[ReportStatus, set[ReportStatus]] = {
         ReportStatus.DRAFT: {ReportStatus.SUBMITTED},
         ReportStatus.SUBMITTED: {ReportStatus.APPROVED, ReportStatus.REJECTED},
-        ReportStatus.REJECTED: {ReportStatus.SUBMITTED},
+        ReportStatus.REJECTED: {ReportStatus.DRAFT},
         ReportStatus.APPROVED: set(),
     }
 
-    _EDITABLE_STATUSES = {ReportStatus.DRAFT, ReportStatus.REJECTED}
+    _EDITABLE_STATUSES = {ReportStatus.DRAFT}
 
     @classmethod
     def can_transition(cls, current: ReportStatus, target: ReportStatus) -> bool:

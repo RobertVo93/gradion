@@ -11,7 +11,6 @@ from app.schemas.receipt import ReceiptUploadResponse
 from app.services.receipt_extraction_service import ReceiptExtractionService
 from app.services.receipt_storage_service import ReceiptStorageService
 from app.services.report_service import ReportService
-from app.services.report_state_machine import ReportStateMachine
 
 
 class ExpenseItemService:
@@ -28,7 +27,7 @@ class ExpenseItemService:
 
     def create_item(self, report_id: int, payload: ExpenseItemCreateRequest, current_user: User) -> ExpenseItem:
         report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
-        self._ensure_report_editable(report.status)
+        report = self.report_service.ensure_draft_for_edit(report)
 
         item = self.item_repo.create(
             report_id=report.id,
@@ -50,7 +49,7 @@ class ExpenseItemService:
         current_user: User,
     ) -> ExpenseItem:
         report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
-        self._ensure_report_editable(report.status)
+        report = self.report_service.ensure_draft_for_edit(report)
 
         item = self._get_report_item(report_id=report.id, item_id=item_id)
 
@@ -73,7 +72,7 @@ class ExpenseItemService:
 
     def delete_item(self, report_id: int, item_id: int, current_user: User) -> None:
         report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
-        self._ensure_report_editable(report.status)
+        report = self.report_service.ensure_draft_for_edit(report)
 
         item = self._get_report_item(report_id=report.id, item_id=item_id)
         self.item_repo.delete(item)
@@ -87,7 +86,7 @@ class ExpenseItemService:
         current_user: User,
     ) -> ReceiptUploadResponse:
         report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
-        self._ensure_report_editable(report.status)
+        report = self.report_service.ensure_draft_for_edit(report)
         item = self._get_report_item(report_id=report.id, item_id=item_id)
 
         receipt_url, file_path = await self.storage_service.save(file)
@@ -115,8 +114,3 @@ class ExpenseItemService:
         if item.report_id != report_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Item does not belong to report")
         return item
-
-    @staticmethod
-    def _ensure_report_editable(report_status) -> None:
-        if not ReportStateMachine.is_editable(report_status):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is locked")

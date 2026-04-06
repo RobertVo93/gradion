@@ -79,6 +79,23 @@ def test_cannot_create_item_when_report_locked(db_session: Session) -> None:
     assert exc.value.status_code == 400
 
 
+def test_create_item_from_rejected_transitions_report_to_draft(db_session: Session) -> None:
+    user = _create_user(db_session, "item2b@example.com")
+    report = _create_report(db_session, user.id, status=ReportStatus.REJECTED)
+
+    payload = ExpenseItemCreateRequest(
+        amount=Decimal("8.00"),
+        currency="USD",
+        category="Meal",
+        transaction_date=date(2026, 4, 1),
+    )
+
+    ExpenseItemService(db_session).create_item(report.id, payload, user)
+    db_session.refresh(report)
+
+    assert report.status == ReportStatus.DRAFT
+
+
 def test_update_item_recalculates_total(db_session: Session) -> None:
     user = _create_user(db_session, "item3@example.com")
     report = _create_report(db_session, user.id)

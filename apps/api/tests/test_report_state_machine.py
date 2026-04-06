@@ -8,7 +8,7 @@ def test_valid_state_transitions() -> None:
     assert ReportStateMachine.can_transition(ReportStatus.DRAFT, ReportStatus.SUBMITTED)
     assert ReportStateMachine.can_transition(ReportStatus.SUBMITTED, ReportStatus.APPROVED)
     assert ReportStateMachine.can_transition(ReportStatus.SUBMITTED, ReportStatus.REJECTED)
-    assert ReportStateMachine.can_transition(ReportStatus.REJECTED, ReportStatus.SUBMITTED)
+    assert ReportStateMachine.can_transition(ReportStatus.REJECTED, ReportStatus.DRAFT)
 
 
 def test_invalid_transition_raises() -> None:
@@ -18,6 +18,6 @@ def test_invalid_transition_raises() -> None:
 
 def test_editable_statuses() -> None:
     assert ReportStateMachine.is_editable(ReportStatus.DRAFT)
-    assert ReportStateMachine.is_editable(ReportStatus.REJECTED)
+    assert not ReportStateMachine.is_editable(ReportStatus.REJECTED)
     assert not ReportStateMachine.is_editable(ReportStatus.SUBMITTED)
     assert not ReportStateMachine.is_editable(ReportStatus.APPROVED)

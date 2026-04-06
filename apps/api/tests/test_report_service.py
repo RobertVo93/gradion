@@ -57,6 +57,16 @@ def test_update_report_fails_when_submitted(db_session: Session) -> None:
     assert exc.value.status_code == 400
 
 
+def test_update_report_from_rejected_transitions_to_draft(db_session: Session) -> None:
+    user = _create_user(db_session, "u3b@example.com")
+    report = _create_report(db_session, user.id, ReportStatus.REJECTED)
+
+    updated = ReportService(db_session).update_report(report.id, user, title="Reworked", description=None)
+
+    assert updated.status == ReportStatus.DRAFT
+    assert updated.title == "Reworked"
+
+
 def test_delete_report_only_allowed_in_draft(db_session: Session) -> None:
     user = _create_user(db_session, "u4@example.com")
     draft_report = _create_report(db_session, user.id, ReportStatus.DRAFT, title="Draft")

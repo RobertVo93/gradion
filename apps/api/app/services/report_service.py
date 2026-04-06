@@ -30,8 +30,7 @@ class ReportService:
 
     def update_report(self, report_id: int, current_user: User, title: str | None, description: str | None) -> ExpenseReport:
         report = self.get_owned_report(report_id, current_user)
-        if not ReportStateMachine.is_editable(report.status):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is locked")
+        report = self.ensure_draft_for_edit(report)
 
         if title is not None:
             report.title = title
@@ -59,6 +58,14 @@ class ReportService:
         report = self._get_report_or_404(report_id)
         self._set_status(report, ReportStatus.REJECTED)
         return self.report_repo.update(report)
+
+    def ensure_draft_for_edit(self, report: ExpenseReport) -> ExpenseReport:
+        if report.status == ReportStatus.REJECTED:
+            self._set_status(report, ReportStatus.DRAFT)
+            return self.report_repo.update(report)
+        if report.status != ReportStatus.DRAFT:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is locked")
+        return report
 
     def _get_report_or_404(self, report_id: int) -> ExpenseReport:
         report = self.report_repo.get_by_id(report_id)
