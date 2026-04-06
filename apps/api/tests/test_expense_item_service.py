@@ -49,7 +49,6 @@ def test_create_item_updates_report_total(db_session: Session) -> None:
 
     payload = ExpenseItemCreateRequest(
         amount=Decimal("12.50"),
-        currency="usd",
         category="Travel",
         merchant_name="Grab",
         transaction_date=date(2026, 4, 1),
@@ -58,7 +57,7 @@ def test_create_item_updates_report_total(db_session: Session) -> None:
     item = ExpenseItemService(db_session).create_item(report.id, payload, user)
     db_session.refresh(report)
 
-    assert item.currency == "USD"
+    assert item.currency == "VND"
     assert report.total_amount == Decimal("12.50")
 
 

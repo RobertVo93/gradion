@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.expense_report import ReportStatus
+from app.schemas.expense_item import CurrencyCode
 
 
 class ReportCreateRequest(BaseModel):
@@ -22,6 +23,7 @@ class ReportResponse(BaseModel):
     title: str
     description: str | None
     status: ReportStatus
+    currency: CurrencyCode | None = None
     total_amount: Decimal
     created_at: datetime
     updated_at: datetime

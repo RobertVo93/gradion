@@ -31,3 +31,10 @@ class ExpenseReport(Base):
     @property
     def total_amount(self) -> Decimal:
         return sum((item.amount for item in self.items), Decimal("0.00"))
+
+    @property
+    def currency(self) -> str | None:
+        if not self.items:
+            return None
+        first_item = min(self.items, key=lambda item: item.id)
+        return first_item.currency
