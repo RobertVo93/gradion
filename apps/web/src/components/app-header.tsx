@@ -18,11 +18,11 @@ export function AppHeader() {
           Ledger Forge
         </Link>
         <nav className="flex items-center gap-2 text-sm">
-          <Link href="/reports" className={`rounded-full px-3 py-1.5 ${pathname.startsWith("/reports") ? "bg-black text-white" : "hover:bg-black/5"}`}>
+          <Link href="/reports" className={`!text-white rounded-full px-3 py-1.5 ${pathname.startsWith("/reports") ? "bg-black text-white" : "hover:bg-black/5"}`}>
             Reports
           </Link>
           {user?.role === "admin" && (
-            <Link href="/admin" className={`rounded-full px-3 py-1.5 ${pathname.startsWith("/admin") ? "bg-black text-white" : "hover:bg-black/5"}`}>
+            <Link href="/admin" className={`!text-white rounded-full px-3 py-1.5 ${pathname.startsWith("/admin") ? "bg-black text-white" : "hover:bg-black/5"}`}>
               Admin
             </Link>
           )}
