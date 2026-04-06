@@ -15,7 +15,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 border-b border-black/10 bg-[rgba(255,251,244,0.93)] backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 md:px-6">
         <Link href="/reports" className="text-lg font-black tracking-tight">
-          Ledger Forge
+          Expense Reports
         </Link>
         <nav className="flex items-center gap-2 text-sm">
           <Link href="/reports" className={`!text-white rounded-full px-3 py-1.5 ${pathname.startsWith("/reports") ? "bg-black text-white" : "hover:bg-black/5"}`}>

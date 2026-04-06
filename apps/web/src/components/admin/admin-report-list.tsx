@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { StatusBadge } from "@/components/status-badge";
 import { Report } from "@/lib/types";
+import { formatTotal } from "@/lib/utils";
 
 type AdminReportListProps = {
   reports: Report[];
@@ -17,7 +18,7 @@ export function AdminReportList({ reports, onApprove, onReject }: AdminReportLis
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-lg font-bold">{report.title}</p>
-              <p className="text-sm text-black/60">User #{report.user_id} · Total ${report.total_amount}</p>
+              <p className="text-sm text-black/60">User #{report.user_id} · Total {formatTotal(report.total_amount, report.currency)}</p>
             </div>
             <StatusBadge status={report.status} />
           </div>

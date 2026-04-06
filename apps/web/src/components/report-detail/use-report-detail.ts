@@ -19,17 +19,23 @@ export function useReportDetail(reportId: number) {
   const [loading, setLoading] = useState(true);
 
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("VND");
   const [category, setCategory] = useState("Meal");
   const [merchant, setMerchant] = useState("");
   const [date, setDate] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [extractionState, setExtractionState] = useState<ExtractionState>("idle");
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState("");
 
   const receiptInputRef = useRef<HTMLInputElement | null>(null);
   const isLocked = useMemo(() => report?.status !== "DRAFT", [report]);
   const editingItem = useMemo(() => items.find((item) => item.id === editingItemId) || null, [editingItemId, items]);
+  const reportCurrency = useMemo(() => {
+    if (!items.length) return null;
+    const firstItem = [...items].sort((a, b) => a.id - b.id)[0];
+    return firstItem.currency.toUpperCase();
+  }, [items]);
   const isProcessingReceipt = extractionState === "uploading" || extractionState === "extracting";
   const resolveReceiptUrl = useCallback(
     (url: string) => (url.startsWith("http://") || url.startsWith("https://") ? url : `${process.env.NEXT_PUBLIC_API_URL}${url}`),
@@ -39,19 +45,19 @@ export function useReportDetail(reportId: number) {
   const resetForm = useCallback(() => {
     setEditingItemId(null);
     setAmount("");
-    setCurrency("USD");
+    setCurrency(reportCurrency ?? "VND");
     setCategory("Meal");
     setMerchant("");
     setDate("");
     setReceiptFile(null);
     setExtractionState("idle");
     if (receiptInputRef.current) receiptInputRef.current.value = "";
-  }, []);
+  }, [reportCurrency]);
 
   const startEdit = useCallback((item: ExpenseItem) => {
     setEditingItemId(item.id);
     setAmount(String(item.amount));
-    setCurrency(item.currency);
+    setCurrency((reportCurrency ?? item.currency).toUpperCase());
     setCategory(item.category);
     setMerchant(item.merchant_name || "");
     setDate(item.transaction_date);
@@ -59,7 +65,7 @@ export function useReportDetail(reportId: number) {
     setExtractionState("idle");
     if (receiptInputRef.current) receiptInputRef.current.value = "";
     setError("");
-  }, []);
+  }, [reportCurrency]);
 
   const loadAll = useCallback(async () => {
     if (!token) return;
@@ -83,6 +89,31 @@ export function useReportDetail(reportId: number) {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed loading report"))
       .finally(() => setLoading(false));
   }, [loadAll, router, token]);
+
+  useEffect(() => {
+    if (editingItemId) return;
+    setCurrency(reportCurrency ?? "VND");
+  }, [editingItemId, reportCurrency]);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(() => setToastMessage(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  const extractPreview = useCallback(
+    async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiRequest<ReceiptPreviewResponse>("/receipts/extract-preview", {
+        method: "POST",
+        token,
+        body: formData,
+        headers: {},
+      });
+    },
+    [token],
+  );
 
   const onSubmitReport = useCallback(async () => {
     if (!token) return;
@@ -130,7 +161,7 @@ export function useReportDetail(reportId: number) {
             token,
             body: JSON.stringify({
               amount: Number(amount),
-              currency,
+              currency: (reportCurrency ?? currency).toUpperCase(),
               category,
               merchant_name: merchant || null,
               transaction_date: date,
@@ -142,7 +173,7 @@ export function useReportDetail(reportId: number) {
             token,
             body: JSON.stringify({
               amount: Number(amount),
-              currency,
+              currency: (reportCurrency ?? currency).toUpperCase(),
               category,
               merchant_name: merchant || null,
               transaction_date: date,
@@ -170,7 +201,7 @@ export function useReportDetail(reportId: number) {
         setLoading(false);
       }
     },
-    [amount, category, currency, date, editingItemId, isLocked, loadAll, merchant, receiptFile, reportId, resetForm, token],
+    [amount, category, currency, date, editingItemId, isLocked, loadAll, merchant, receiptFile, reportCurrency, reportId, resetForm, token],
   );
 
   const processReceipt = useCallback(async () => {
@@ -178,19 +209,21 @@ export function useReportDetail(reportId: number) {
     setError("");
     try {
       setExtractionState("uploading");
-      const formData = new FormData();
-      formData.append("file", receiptFile);
-
       setExtractionState("extracting");
-      const extracted = await apiRequest<ReceiptPreviewResponse>("/receipts/extract-preview", {
-        method: "POST",
-        token,
-        body: formData,
-        headers: {},
-      });
+      const extracted = await extractPreview(receiptFile);
+
+      const extractedCurrency = extracted.extracted.currency?.toUpperCase();
+      if (reportCurrency && extractedCurrency && extractedCurrency !== reportCurrency) {
+        setToastMessage(
+          `Your report currency is ${reportCurrency}, so you cannot upload a ${extractedCurrency} receipt.`,
+        );
+        setExtractionState("failed");
+        resetForm();
+        return;
+      }
 
       if (extracted.extracted.amount !== null) setAmount(String(extracted.extracted.amount));
-      if (extracted.extracted.currency) setCurrency(extracted.extracted.currency);
+      if (extractedCurrency) setCurrency(extractedCurrency);
       if (extracted.extracted.merchant_name) setMerchant(extracted.extracted.merchant_name);
       if (extracted.extracted.transaction_date) setDate(extracted.extracted.transaction_date);
 
@@ -199,13 +232,24 @@ export function useReportDetail(reportId: number) {
       setExtractionState("failed");
       setError(err instanceof Error ? err.message : "Receipt processing failed");
     }
-  }, [editingItemId, isLocked, receiptFile, token]);
+  }, [editingItemId, extractPreview, isLocked, receiptFile, reportCurrency, token]);
 
   const uploadReceiptToItem = useCallback(async () => {
     if (!token || !receiptFile || isLocked || !editingItemId) return;
     setError("");
     try {
       setExtractionState("uploading");
+      const preview = await extractPreview(receiptFile);
+      const extractedCurrency = preview.extracted.currency?.toUpperCase();
+      if (reportCurrency && extractedCurrency && extractedCurrency !== reportCurrency) {
+        setToastMessage(
+          `Your report currency is ${reportCurrency}, so you cannot upload a ${extractedCurrency} receipt.`,
+        );
+        setExtractionState("failed");
+        resetForm();
+        return;
+      }
+
       const formData = new FormData();
       formData.append("file", receiptFile);
 
@@ -218,7 +262,7 @@ export function useReportDetail(reportId: number) {
       });
 
       if (uploaded.extracted.amount !== null) setAmount(String(uploaded.extracted.amount));
-      if (uploaded.extracted.currency) setCurrency(uploaded.extracted.currency);
+      if (uploaded.extracted.currency) setCurrency(uploaded.extracted.currency.toUpperCase());
       if (uploaded.extracted.merchant_name) setMerchant(uploaded.extracted.merchant_name);
       if (uploaded.extracted.transaction_date) setDate(uploaded.extracted.transaction_date);
 
@@ -228,7 +272,7 @@ export function useReportDetail(reportId: number) {
       setExtractionState("failed");
       setError(err instanceof Error ? err.message : "Receipt upload failed");
     }
-  }, [editingItemId, isLocked, loadAll, receiptFile, reportId, token]);
+  }, [editingItemId, extractPreview, isLocked, loadAll, receiptFile, reportCurrency, reportId, token]);
 
   const deleteItem = useCallback(
     async (itemId: number) => {
@@ -250,11 +294,13 @@ export function useReportDetail(reportId: number) {
     loading,
     amount,
     currency,
+    reportCurrency,
     category,
     merchant,
     date,
     receiptFile,
     extractionState,
+    toastMessage,
     editingItem,
     receiptInputRef,
     isLocked,
@@ -276,5 +322,6 @@ export function useReportDetail(reportId: number) {
     setDate,
     setReceiptFile,
     setExtractionState,
+    setToastMessage,
   };
 }

@@ -1,5 +1,6 @@
 import { StatusBadge } from "@/components/status-badge";
 import { Report } from "@/lib/types";
+import { formatTotal } from "@/lib/utils";
 
 type AdminReportSummaryCardProps = {
   report: Report;
@@ -23,7 +24,7 @@ export function AdminReportSummaryCard({ report, acting, onApprove, onReject }: 
       <div className="mt-4 grid gap-3 text-sm text-black/70 md:grid-cols-3">
         <div className="rounded-xl bg-orange-50 p-3">
           <p className="text-xs font-bold uppercase tracking-wider text-black/45">Total Amount</p>
-          <p className="mt-1 text-lg font-black text-black">${report.total_amount}</p>
+          <p className="mt-1 text-lg font-black text-black">{formatTotal(report.total_amount, report.currency)}</p>
         </div>
         <div className="rounded-xl bg-orange-50 p-3">
           <p className="text-xs font-bold uppercase tracking-wider text-black/45">Created</p>

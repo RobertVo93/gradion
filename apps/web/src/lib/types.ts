@@ -22,6 +22,7 @@ export type Report = {
   title: string;
   description: string | null;
   status: ReportStatus;
+  currency: "VND" | "USD" | "EUR" | "JPY" | null;
   total_amount: string;
   created_at: string;
   updated_at: string;

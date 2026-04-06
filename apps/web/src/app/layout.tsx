@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ledger Forge · Expense Reports",
+  title: "Expense Reports",
   description: "Expense report management for Gradion assessment",
 };
 

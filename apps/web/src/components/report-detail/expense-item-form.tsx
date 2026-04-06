@@ -10,6 +10,7 @@ type ExpenseItemFormProps = {
   isLocked: boolean;
   amount: string;
   currency: string;
+  reportCurrency: string | null;
   category: string;
   merchant: string;
   date: string;
@@ -35,6 +36,7 @@ export function ExpenseItemForm({
   isLocked,
   amount,
   currency,
+  reportCurrency,
   category,
   merchant,
   date,
@@ -54,6 +56,7 @@ export function ExpenseItemForm({
   onCancelEdit,
 }: ExpenseItemFormProps) {
   const isEditing = !!editingItem;
+  const currencyOptions = ["VND", "USD", "EUR", "JPY"];
 
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
@@ -64,7 +67,17 @@ export function ExpenseItemForm({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Amount" type="number" step="0.01" value={amount} onChange={(e) => onAmountChange(e.target.value)} required />
-        <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Currency" value={currency} onChange={(e) => onCurrencyChange(e.target.value)} required />
+        <select
+          className="rounded-xl border border-black/15 px-4 py-3"
+          value={currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
+          disabled={Boolean(reportCurrency)}
+          required
+        >
+          {currencyOptions.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
         <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Category" value={category} onChange={(e) => onCategoryChange(e.target.value)} required />
         <input className="rounded-xl border border-black/15 px-4 py-3" placeholder="Merchant" value={merchant} onChange={(e) => onMerchantChange(e.target.value)} />
         <input className="rounded-xl border border-black/15 px-4 py-3 sm:col-span-2" type="date" value={date} onChange={(e) => onDateChange(e.target.value)} required />
@@ -78,6 +91,7 @@ export function ExpenseItemForm({
       </div>
 
       <div className="mt-3 rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2 text-xs font-semibold uppercase tracking-wide">AI extraction: {extractionState}</div>
+      {reportCurrency && <p className="mt-2 text-sm text-black/60">Report currency is locked to {reportCurrency}.</p>}
 
       {!isEditing ? (
         <button

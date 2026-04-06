@@ -10,6 +10,7 @@ import { LoadingOverlay } from "@/components/loading-overlay";
 import { ExpenseItemForm } from "@/components/report-detail/expense-item-form";
 import { ExpenseItemsPanel } from "@/components/report-detail/expense-items-panel";
 import { ReportActionsCard } from "@/components/report-detail/report-actions-card";
+import { ToastMessage } from "@/components/toast-message";
 import { useReportDetail } from "@/components/report-detail/use-report-detail";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -24,11 +25,13 @@ export default function ReportDetailPage() {
     loading,
     amount,
     currency,
+    reportCurrency,
     category,
     merchant,
     date,
     receiptFile,
     extractionState,
+    toastMessage,
     editingItem,
     receiptInputRef,
     isLocked,
@@ -50,6 +53,7 @@ export default function ReportDetailPage() {
     setDate,
     setReceiptFile,
     setExtractionState,
+    setToastMessage,
   } = useReportDetail(reportId);
 
   if (loading && !report) return <main className="p-6">Loading report...</main>;
@@ -71,6 +75,7 @@ export default function ReportDetailPage() {
       />
       <LoadingOverlay show={isProcessingReceipt} label="Processing receipt with AI" />
       <LoadingOverlay show={loading} label="Loading..." />
+      <ToastMessage message={toastMessage} onClose={() => setToastMessage("")} />
       <AppHeader />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -80,6 +85,7 @@ export default function ReportDetailPage() {
 
         <ReportActionsCard
           report={report}
+          reportCurrency={reportCurrency}
           onSubmit={onSubmitReport}
           onReedit={onReeditReport}
           onDelete={() => setConfirmDeleteOpen(true)}
@@ -94,6 +100,7 @@ export default function ReportDetailPage() {
             isLocked={isLocked}
             amount={amount}
             currency={currency}
+            reportCurrency={reportCurrency}
             category={category}
             merchant={merchant}
             date={date}
