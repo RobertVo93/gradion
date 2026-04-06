@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppHeader } from "@/components/app-header";
+import { ConfirmActionDialog } from "@/components/confirm-action-dialog";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { StatusBadge } from "@/components/status-badge";
 import { apiRequest } from "@/lib/api";
@@ -30,6 +31,7 @@ export default function AdminReportDetailPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(null);
 
   async function loadData() {
     if (!token || !Number.isFinite(reportId)) return;
@@ -80,6 +82,23 @@ export default function AdminReportDetailPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#ffe9d8_0%,_#fff8ef_46%,_#fff_100%)]">
+      <ConfirmActionDialog
+        open={confirmType !== null}
+        title={confirmType === "approve" ? "Approve this report?" : "Reject this report?"}
+        description={
+          confirmType === "approve"
+            ? "This will finalize the report as APPROVED. Continue?"
+            : "This will mark the report as REJECTED and return it to the user for revision. Continue?"
+        }
+        confirmLabel={confirmType === "approve" ? "Yes, Approve" : "Yes, Reject"}
+        tone={confirmType === "approve" ? "approve" : "reject"}
+        busy={acting}
+        onCancel={() => setConfirmType(null)}
+        onConfirm={() => {
+          if (!confirmType) return;
+          action(confirmType).finally(() => setConfirmType(null));
+        }}
+      />
       <LoadingOverlay show={loading || acting} label={acting ? "Updating report status..." : "Loading report details..."} />
       <AppHeader />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
@@ -124,14 +143,14 @@ export default function AdminReportDetailPage() {
             <div className="mt-4 flex gap-2">
               <button
                 disabled={report.status !== "SUBMITTED" || acting}
-                onClick={() => action("approve")}
+                onClick={() => setConfirmType("approve")}
                 className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40"
               >
                 Approve
               </button>
               <button
                 disabled={report.status !== "SUBMITTED" || acting}
-                onClick={() => action("reject")}
+                onClick={() => setConfirmType("reject")}
                 className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40"
               >
                 Reject

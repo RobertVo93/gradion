@@ -86,7 +86,7 @@ export default function ReportDetailPage() {
     if (!token || isLocked) return;
 
     try {
-      const created = await apiRequest<ExpenseItem>(`/reports/${reportId}/items`, {
+      await apiRequest<ExpenseItem>(`/reports/${reportId}/items`, {
         method: "POST",
         token,
         body: JSON.stringify({
@@ -99,21 +99,6 @@ export default function ReportDetailPage() {
         }),
       });
 
-      if (receiptFile) {
-        setExtractionState("uploading");
-        const formData = new FormData();
-        formData.append("file", receiptFile);
-
-        setExtractionState("extracting");
-        await apiRequest<ReceiptUploadResponse>(`/reports/${reportId}/items/${created.id}/receipt`, {
-          method: "POST",
-          token,
-          body: formData,
-          headers: {},
-        });
-        setExtractionState("completed");
-      }
-
       setAmount("");
       setCurrency("USD");
       setCategory("Meal");
@@ -122,7 +107,6 @@ export default function ReportDetailPage() {
       setReceiptFile(null);
       await loadAll();
     } catch (err) {
-      setExtractionState("failed");
       setError(err instanceof Error ? err.message : "Add item failed");
     }
   }
@@ -171,6 +155,7 @@ export default function ReportDetailPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#ffe4cf_0%,_#fff8ef_40%,_#fff_100%)]">
       <LoadingOverlay show={isProcessingReceipt} label="Processing receipt with AI" />
+      <LoadingOverlay show={loading} label="Loading..." />
       <AppHeader />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
