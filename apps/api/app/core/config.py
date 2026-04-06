@@ -4,6 +4,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str
     upload_dir: str = "./storage/uploads"
+    storage_backend: str = "local"
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "receipts"
+    minio_secure: bool = False
+    minio_public_url: str = "http://localhost:9000"
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60

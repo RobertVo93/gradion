@@ -18,7 +18,7 @@ class ExpenseItemService:
         self.item_repo = ExpenseItemRepository(db)
         self.report_repo = ReportRepository(db)
         self.report_service = ReportService(db)
-        self.storage_service = ReceiptStorageService(settings.upload_dir)
+        self.storage_service = ReceiptStorageService(settings)
         self.extraction_service = ReceiptExtractionService()
 
     def list_items(self, report_id: int, current_user: User) -> list[ExpenseItem]:

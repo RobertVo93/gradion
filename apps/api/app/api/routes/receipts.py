@@ -14,7 +14,7 @@ async def extract_preview(
     file: UploadFile = File(...),
     _=Depends(get_current_user),
 ) -> ReceiptPreviewResponse:
-    storage = ReceiptStorageService(settings.upload_dir)
+    storage = ReceiptStorageService(settings)
     extractor = ReceiptExtractionService()
 
     temp_path = await storage.save_temp(file)
