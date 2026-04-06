@@ -79,7 +79,7 @@ def test_cannot_create_item_when_report_locked(db_session: Session) -> None:
     assert exc.value.status_code == 400
 
 
-def test_create_item_from_rejected_transitions_report_to_draft(db_session: Session) -> None:
+def test_create_item_from_rejected_is_blocked_until_reedit(db_session: Session) -> None:
     user = _create_user(db_session, "item2b@example.com")
     report = _create_report(db_session, user.id, status=ReportStatus.REJECTED)
 
@@ -90,10 +90,10 @@ def test_create_item_from_rejected_transitions_report_to_draft(db_session: Sessi
         transaction_date=date(2026, 4, 1),
     )
 
-    ExpenseItemService(db_session).create_item(report.id, payload, user)
-    db_session.refresh(report)
+    with pytest.raises(HTTPException) as exc:
+        ExpenseItemService(db_session).create_item(report.id, payload, user)
 
-    assert report.status == ReportStatus.DRAFT
+    assert exc.value.status_code == 400
 
 
 def test_update_item_recalculates_total(db_session: Session) -> None:

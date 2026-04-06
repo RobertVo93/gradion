@@ -71,6 +71,16 @@ def submit_report(
     return ReportResponse.model_validate(report)
 
 
+@router.post("/{report_id}/reedit", response_model=ReportResponse)
+def reedit_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReportResponse:
+    report = ReportService(db).reedit_report(report_id=report_id, current_user=current_user)
+    return ReportResponse.model_validate(report)
+
+
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_report(
     report_id: int,
