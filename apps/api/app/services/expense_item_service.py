@@ -1,11 +1,15 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.expense_item import ExpenseItem
 from app.models.user import User
 from app.repositories.expense_item_repository import ExpenseItemRepository
 from app.repositories.report_repository import ReportRepository
 from app.schemas.expense_item import ExpenseItemCreateRequest, ExpenseItemUpdateRequest
+from app.schemas.receipt import ReceiptUploadResponse
+from app.services.receipt_extraction_service import ReceiptExtractionService
+from app.services.receipt_storage_service import ReceiptStorageService
 from app.services.report_service import ReportService
 from app.services.report_state_machine import ReportStateMachine
 
@@ -15,6 +19,8 @@ class ExpenseItemService:
         self.item_repo = ExpenseItemRepository(db)
         self.report_repo = ReportRepository(db)
         self.report_service = ReportService(db)
+        self.storage_service = ReceiptStorageService(settings.upload_dir)
+        self.extraction_service = ReceiptExtractionService()
 
     def list_items(self, report_id: int, current_user: User) -> list[ExpenseItem]:
         self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
@@ -72,6 +78,28 @@ class ExpenseItemService:
         item = self._get_report_item(report_id=report.id, item_id=item_id)
         self.item_repo.delete(item)
         self._recalculate_report_total(report.id)
+
+    async def upload_receipt(
+        self,
+        report_id: int,
+        item_id: int,
+        file: UploadFile,
+        current_user: User,
+    ) -> ReceiptUploadResponse:
+        report = self.report_service.get_owned_report(report_id=report_id, current_user=current_user)
+        self._ensure_report_editable(report.status)
+        item = self._get_report_item(report_id=report.id, item_id=item_id)
+
+        receipt_url, file_path = await self.storage_service.save(file)
+        item.receipt_url = receipt_url
+        self.item_repo.update(item)
+
+        extraction_status, extracted = self.extraction_service.extract(file_path=file_path, content_type=file.content_type)
+        return ReceiptUploadResponse(
+            receipt_url=receipt_url,
+            extraction_status=extraction_status,
+            extracted=extracted,
+        )
 
     def _recalculate_report_total(self, report_id: int) -> None:
         report = self.report_repo.get_by_id(report_id)

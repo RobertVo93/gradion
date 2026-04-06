@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.expense_item import ExpenseItemCreateRequest, ExpenseItemResponse, ExpenseItemUpdateRequest
+from app.schemas.receipt import ReceiptUploadResponse
 from app.services.expense_item_service import ExpenseItemService
 
 router = APIRouter(prefix="/reports", tags=["expense-items"])
@@ -57,3 +58,19 @@ def delete_item(
 ) -> Response:
     ExpenseItemService(db).delete_item(report_id=report_id, item_id=item_id, current_user=current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{report_id}/items/{item_id}/receipt", response_model=ReceiptUploadResponse)
+async def upload_receipt(
+    report_id: int,
+    item_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReceiptUploadResponse:
+    return await ExpenseItemService(db).upload_receipt(
+        report_id=report_id,
+        item_id=item_id,
+        file=file,
+        current_user=current_user,
+    )

@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import os
 from pathlib import Path
 import sys
 
@@ -7,6 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
+os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+os.environ.setdefault("JWT_SECRET", "test-secret")
 
 from app.models.base import Base
 

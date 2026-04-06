@@ -9,4 +9,6 @@ __all__ = [
     "ExpenseItemCreateRequest",
     "ExpenseItemUpdateRequest",
     "ExpenseItemResponse",
+    "ReceiptExtractedFields",
+    "ReceiptUploadResponse",
 ]
