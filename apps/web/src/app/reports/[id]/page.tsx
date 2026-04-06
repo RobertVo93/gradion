@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { AppHeader } from "@/components/app-header";
+import { LoadingOverlay } from "@/components/loading-overlay";
 import { StatusBadge } from "@/components/status-badge";
 import { apiRequest } from "@/lib/api";
 import { getStoredUser, getToken } from "@/lib/auth";
@@ -32,6 +33,7 @@ export default function ReportDetailPage() {
   const [extractionState, setExtractionState] = useState<ExtractionState>("idle");
 
   const isLocked = useMemo(() => report?.status === "SUBMITTED" || report?.status === "APPROVED", [report]);
+  const isProcessingReceipt = extractionState === "uploading" || extractionState === "extracting";
 
   async function loadAll() {
     if (!token) return;
@@ -168,6 +170,7 @@ export default function ReportDetailPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#ffe4cf_0%,_#fff8ef_40%,_#fff_100%)]">
+      <LoadingOverlay show={isProcessingReceipt} label="Processing receipt with AI" />
       <AppHeader />
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
