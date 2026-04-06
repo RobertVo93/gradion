@@ -43,6 +43,8 @@ class ReportService:
 
     def submit_report(self, report_id: int, current_user: User) -> ExpenseReport:
         report = self.get_owned_report(report_id, current_user)
+        if not report.items:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot submit report without expense items")
         self._set_status(report, ReportStatus.SUBMITTED)
         return self.report_repo.update(report)
 

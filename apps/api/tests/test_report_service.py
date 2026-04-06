@@ -1,7 +1,11 @@
+from datetime import date
+from decimal import Decimal
+
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.models.expense_item import ExpenseItem
 from app.models.expense_report import ExpenseReport, ReportStatus
 from app.models.user import User, UserRole
 from app.services.report_service import ReportService
@@ -28,13 +32,40 @@ def _create_report(
     return report
 
 
+def _create_item(db: Session, report_id: int) -> ExpenseItem:
+    item = ExpenseItem(
+        report_id=report_id,
+        amount=Decimal("10.00"),
+        currency="USD",
+        category="Meal",
+        merchant_name="Store",
+        transaction_date=date(2026, 4, 6),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 def test_submit_report_changes_status_to_submitted(db_session: Session) -> None:
     user = _create_user(db_session, "u1@example.com")
     report = _create_report(db_session, user.id, ReportStatus.DRAFT)
+    _create_item(db_session, report.id)
 
     result = ReportService(db_session).submit_report(report.id, user)
 
     assert result.status == ReportStatus.SUBMITTED
+
+
+def test_submit_report_fails_when_no_items(db_session: Session) -> None:
+    user = _create_user(db_session, "empty@example.com")
+    report = _create_report(db_session, user.id, ReportStatus.DRAFT)
+
+    with pytest.raises(HTTPException) as exc:
+        ReportService(db_session).submit_report(report.id, user)
+
+    assert exc.value.status_code == 400
+    assert "without expense items" in exc.value.detail
 
 
 def test_submit_report_from_approved_is_invalid(db_session: Session) -> None:
